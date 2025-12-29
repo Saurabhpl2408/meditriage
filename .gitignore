@@ -1,0 +1,117 @@
+# MediTriage .gitignore
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Dependencies
+node_modules/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Build outputs
+dist/
+build/
+*.js.map
+*.d.ts
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing
+coverage/
+.nyc_output/
+*.test.js
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+pgdata/
+
+# ChromaDB
+chromadb/
+*.chroma
+
+# AWS
+.aws/
+*.pem
+*.key
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Package manager locks (uncomment if needed)
+# package-lock.json
+# yarn.lock
+# poetry.lock
+
+# Sensitive data
+secrets/
+credentials/
+*.credentials
+
+# Medical documents (large files)
+medical_docs/*.pdf
+medical_docs/*.doc
+medical_docs/*.docx
+
+# Model files (large)
+models/*.bin
+models/*.pt
+models/*.h5
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# CloudFormation
+.cfn/
+
+# Monitoring
+prometheus_data/
+grafana_data/
