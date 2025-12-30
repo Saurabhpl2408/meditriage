@@ -1,0 +1,74 @@
+[
+  {
+    "content": "Fever is an elevation of body temperature above the normal range. Normal body temperature is typically around 98.6°F (37°C), though it can vary slightly from person to person. A fever is generally defined as a body temperature of 100.4°F (38°C) or higher. Fever is usually a sign that the body is fighting an infection. Common causes include viral infections like the flu or common cold, bacterial infections, and inflammatory conditions. Most fevers are beneficial and help the body fight infection. Treatment focuses on managing symptoms and staying hydrated. Medical attention should be sought if fever exceeds 103°F (39.4°C), persists for more than 3 days, or is accompanied by severe symptoms.",
+    "metadata": {
+      "category": "symptom",
+      "topic": "fever",
+      "source": "medical_reference",
+      "urgency": "varies"
+    }
+  },
+  {
+    "content": "Chest pain can have many causes, ranging from minor issues to life-threatening emergencies. Heart-related chest pain, also called angina, is caused by reduced blood flow to the heart muscle. It may feel like pressure, squeezing, or fullness in the chest. This type of pain may spread to the shoulders, arms, neck, jaw, or back. Other serious causes include heart attack (myocardial infarction), aortic dissection, and pulmonary embolism. Less serious causes include acid reflux, muscle strain, and anxiety. Emergency medical attention (call 911) is needed if chest pain is severe, sudden, or accompanied by difficulty breathing, sweating, nausea, or pain radiating to the arm or jaw.",
+    "metadata": {
+      "category": "symptom",
+      "topic": "chest pain",
+      "source": "emergency_medicine",
+      "urgency": "emergency"
+    }
+  },
+  {
+    "content": "The common cold is a viral infection of the upper respiratory tract. Symptoms typically include runny or stuffy nose, sore throat, cough, sneezing, mild headache, and low-grade fever. The common cold is caused by many different viruses, most commonly rhinoviruses. It is highly contagious and spreads through respiratory droplets. Most colds resolve on their own within 7-10 days. Treatment is supportive and includes rest, fluids, and over-the-counter medications for symptom relief. Antibiotics are not effective against viral infections. Seek medical care if symptoms worsen, persist beyond 10 days, or if you develop high fever, severe headache, or difficulty breathing.",
+    "metadata": {
+      "category": "condition",
+      "topic": "common cold",
+      "source": "infectious_disease",
+      "urgency": "self-care"
+    }
+  },
+  {
+    "content": "Migraine is a neurological condition characterized by intense, debilitating headaches. Migraine attacks typically cause throbbing or pulsing pain on one side of the head, though they can affect both sides. Associated symptoms often include nausea, vomiting, and extreme sensitivity to light and sound. Some people experience visual disturbances called auras before the headache begins. Triggers can include stress, certain foods, hormonal changes, lack of sleep, and environmental factors. Treatment includes pain-relieving medications, preventive medications for frequent migraines, and lifestyle modifications. Keeping a headache diary can help identify triggers. Seek immediate medical attention if you experience sudden, severe headache unlike previous headaches, or headache with fever, stiff neck, confusion, or neurological symptoms.",
+    "metadata": {
+      "category": "condition",
+      "topic": "migraine",
+      "source": "neurology",
+      "urgency": "varies"
+    }
+  },
+  {
+    "content": "Pneumonia is an infection that inflames the air sacs in one or both lungs. The air sacs may fill with fluid or pus, causing cough with phlegm, fever, chills, and difficulty breathing. Various organisms can cause pneumonia, including bacteria, viruses, and fungi. Bacterial pneumonia is the most common type in adults and can be treated with antibiotics. Symptoms can range from mild to severe and life-threatening. Risk factors include age (young children and adults over 65), weakened immune system, chronic diseases, and smoking. Diagnosis is typically made with chest X-ray and physical examination. Treatment depends on the type and severity of pneumonia. Vaccination can prevent some types of pneumonia. Seek immediate medical care if you have difficulty breathing, persistent chest pain, or high fever.",
+    "metadata": {
+      "category": "condition",
+      "topic": "pneumonia",
+      "source": "pulmonary_medicine",
+      "urgency": "urgent"
+    }
+  },
+  {
+    "content": "Hand hygiene is one of the most effective ways to prevent the spread of infections. Proper handwashing involves wetting hands with clean water, applying soap, lathering for at least 20 seconds (including backs of hands, between fingers, and under nails), rinsing thoroughly, and drying with a clean towel. Alcohol-based hand sanitizers with at least 60% alcohol are an effective alternative when soap and water are not available. Key times to wash hands include before eating or preparing food, after using the bathroom, after blowing your nose or coughing, after touching garbage, and after touching animals. Regular hand hygiene significantly reduces the transmission of respiratory infections, gastrointestinal infections, and other communicable diseases.",
+    "metadata": {
+      "category": "prevention",
+      "topic": "hand hygiene",
+      "source": "public_health",
+      "urgency": "education"
+    }
+  },
+  {
+    "content": "Dehydration occurs when the body loses more fluid than it takes in. Common causes include diarrhea, vomiting, excessive sweating, fever, and inadequate fluid intake. Symptoms of mild to moderate dehydration include thirst, dry mouth, reduced urine output, dark yellow urine, fatigue, and dizziness. Severe dehydration can cause confusion, rapid heartbeat, rapid breathing, and fainting. Treatment involves replacing lost fluids and electrolytes. For mild dehydration, drinking water or oral rehydration solutions is usually sufficient. Severe dehydration requires immediate medical attention and may need intravenous fluids. Prevention includes drinking adequate fluids throughout the day, increasing intake during hot weather or physical activity, and replacing fluids lost during illness.",
+    "metadata": {
+      "category": "condition",
+      "topic": "dehydration",
+      "source": "general_medicine",
+      "urgency": "varies"
+    }
+  },
+  {
+    "content": "Stroke occurs when blood supply to part of the brain is interrupted or reduced, depriving brain tissue of oxygen and nutrients. Within minutes, brain cells begin to die. Recognizing stroke symptoms quickly is critical. Use the FAST test: Face drooping, Arm weakness, Speech difficulty, Time to call 911. Other symptoms may include sudden numbness or weakness, confusion, trouble seeing, difficulty walking, or severe headache. There are two main types: ischemic stroke (blocked artery) and hemorrhagic stroke (bleeding in the brain). Risk factors include high blood pressure, smoking, diabetes, high cholesterol, and heart disease. Immediate treatment can minimize brain damage and potential complications. Time is critical - call 911 immediately if stroke symptoms appear. Treatment may include clot-busting drugs or surgical procedures.",
+    "metadata": {
+      "category": "condition",
+      "topic": "stroke",
+      "source": "emergency_neurology",
+      "urgency": "emergency"
+    }
+  }
+]
