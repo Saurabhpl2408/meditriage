@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-50;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  /* Medical Card Styles */
+  .medical-card {
+    @apply bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800;
+  }
+  
+  .medical-card-elevated {
+    @apply bg-white dark:bg-gray-900 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-800;
+  }
+}
