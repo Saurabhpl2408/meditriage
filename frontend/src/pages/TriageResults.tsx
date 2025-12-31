@@ -1,21 +1,49 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Phone, RefreshCw, Printer, CheckCircle2, Info, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { AlertTriangle, Phone, RefreshCw, Printer, CheckCircle2, Info, Clock, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { UrgencyBadge } from '@/components/triage/UrgencyBadge';
 import { ConditionMatchCard } from '@/components/triage/ConditionMatchCard';
 import { useApp } from '@/context/AppContext';
+import { ragService } from '@/services/ragService';
 import { cn } from '@/lib/utils';
-import { useEffect } from 'react';
 
 export default function TriageResults() {
   const navigate = useNavigate();
   const { triageResult, symptoms, clearSymptoms } = useApp();
+  const [knowledgeResults, setKnowledgeResults] = useState<any[]>([]);
+  const [loadingKnowledge, setLoadingKnowledge] = useState(false);
 
   useEffect(() => {
     if (!triageResult) {
       navigate('/symptom-checker');
+      return;
     }
+
+    // Fetch relevant medical knowledge based on top condition
+    const fetchKnowledge = async () => {
+      if (triageResult.topConditions.length > 0) {
+        setLoadingKnowledge(true);
+        try {
+          const topCondition = triageResult.topConditions[0].condition.name;
+          const query = `${topCondition} symptoms treatment care`;
+          
+          console.log('[RAG] Querying knowledge base:', query);
+          const response = await ragService.queryKnowledge(query, 3);
+          console.log('[RAG] Results:', response);
+          
+          setKnowledgeResults(response.results || []);
+        } catch (error) {
+          console.error('[RAG] Failed to fetch knowledge:', error);
+          // Don't show error to user - RAG is optional enhancement
+        } finally {
+          setLoadingKnowledge(false);
+        }
+      }
+    };
+
+    fetchKnowledge();
   }, [triageResult, navigate]);
 
   if (!triageResult) return null;
@@ -129,7 +157,7 @@ export default function TriageResults() {
           </div>
         </motion.div>
 
-        {/* Conditions */}
+        {/* Possible Conditions */}
         {triageResult.topConditions.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -137,13 +165,7 @@ export default function TriageResults() {
             transition={{ delay: 0.3 }}
             className="mb-8"
           >
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              Possible Conditions
-              <span className="text-sm font-normal text-gray-500">
-                Based on {symptoms.length} symptom{symptoms.length !== 1 ? 's' : ''}
-              </span>
-            </h2>
-            
+            <h2 className="text-xl font-semibold mb-4">Possible Conditions</h2>
             <div className="space-y-4">
               {triageResult.topConditions.map((match, index) => (
                 <ConditionMatchCard key={match.condition.id} match={match} rank={index + 1} />
@@ -152,11 +174,61 @@ export default function TriageResults() {
           </motion.div>
         )}
 
+        {/* 🆕 MEDICAL KNOWLEDGE FROM RAG */}
+        {knowledgeResults.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="mb-8"
+          >
+            <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-800">
+              <div className="flex items-center gap-2 mb-4">
+                <BookOpen className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold">Medical Information</h2>
+                <span className="text-xs text-gray-500 ml-auto">
+                  Powered by AI Knowledge Base
+                </span>
+              </div>
+              
+              <div className="space-y-4">
+                {knowledgeResults.map((result, index) => (
+                  <div 
+                    key={result.id}
+                    className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <span className="text-xs font-medium text-primary">
+                        {result.metadata.topic || 'Medical Information'}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {Math.round((result.score || 0) * 100)}% relevant
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      {result.document}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {loadingKnowledge && (
+          <div className="mb-8 text-center">
+            <div className="inline-flex items-center gap-2 text-sm text-gray-500">
+              <div className="h-4 w-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              Loading medical information...
+            </div>
+          </div>
+        )}
+
         {/* Analysis Details */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.5 }}
           className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-800 mb-8"
         >
           <div className="flex items-start gap-3 mb-4">
@@ -183,7 +255,7 @@ export default function TriageResults() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.6 }}
           className="mb-8 p-4 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
         >
           <div className="flex items-start gap-2">
@@ -198,7 +270,7 @@ export default function TriageResults() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
+          transition={{ delay: 0.7 }}
           className="flex flex-col sm:flex-row gap-3 justify-center"
         >
           <Button variant="outline" onClick={() => window.print()} className="gap-2">

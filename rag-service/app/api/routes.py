@@ -176,11 +176,12 @@ async def add_document(request: AddDocumentRequest):
 
 
 @router.post("/documents/add-batch")
-async def add_documents_batch(request: AddDocumentsRequest):
+async def add_documents_batch(documents: List[Dict[str, Any]]):
     """
     Add multiple documents in batch
     
     Efficient for ingesting large amounts of data.
+    Accepts an array of documents directly.
     """
     try:
         chroma_service, _ = get_services()
@@ -188,19 +189,16 @@ async def add_documents_batch(request: AddDocumentsRequest):
         all_documents = []
         all_metadatas = []
         
-        for doc in request.documents:
+        for doc in documents:
             content = clean_text(doc.get('content', ''))
             metadata = doc.get('metadata', {})
             
-            # Chunk if requested
-            if request.chunk:
-                chunks = chunk_text(
-                    content,
-                    chunk_size=settings.max_chunk_size,
-                    overlap=settings.chunk_overlap
-                )
-            else:
-                chunks = [content]
+            # Chunk the content
+            chunks = chunk_text(
+                content,
+                chunk_size=settings.max_chunk_size,
+                overlap=settings.chunk_overlap
+            )
             
             for i, chunk in enumerate(chunks):
                 all_documents.append(chunk)
@@ -219,11 +217,11 @@ async def add_documents_batch(request: AddDocumentsRequest):
         if not result['success']:
             raise HTTPException(status_code=500, detail=result.get('error', 'Batch add failed'))
         
-        logger.info(f"Added {len(all_documents)} chunks from {len(request.documents)} documents")
+        logger.info(f"Added {len(all_documents)} chunks from {len(documents)} documents")
         
         return {
             "success": True,
-            "message": f"Added {len(request.documents)} document(s)",
+            "message": f"Added {len(documents)} document(s)",
             "total_chunks": len(all_documents),
             "ids": result.get('ids', [])
         }
