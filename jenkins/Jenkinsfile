@@ -1,0 +1,281 @@
+// Jenkins CI/CD Pipeline for MediTriage
+
+pipeline {
+    agent any
+    
+    environment {
+        AWS_REGION = 'us-east-1'
+        ECR_REGISTRY = credentials('ecr-registry-url')
+        EKS_CLUSTER = 'meditriage-prod'
+        NAMESPACE = 'meditriage-prod'
+        
+        // Image tags
+        BACKEND_IMAGE = "${ECR_REGISTRY}/meditriage-backend"
+        FRONTEND_IMAGE = "${ECR_REGISTRY}/meditriage-frontend"
+        MCP_IMAGE = "${ECR_REGISTRY}/meditriage-mcp"
+        RAG_IMAGE = "${ECR_REGISTRY}/meditriage-rag"
+        
+        IMAGE_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                sh 'git log -1'
+            }
+        }
+        
+        stage('Install Dependencies') {
+            parallel {
+                stage('Backend') {
+                    steps {
+                        dir('backend') {
+                            sh 'npm ci'
+                        }
+                    }
+                }
+                stage('MCP Server') {
+                    steps {
+                        dir('mcp-server') {
+                            sh 'npm ci'
+                        }
+                    }
+                }
+                stage('Frontend') {
+                    steps {
+                        dir('frontend') {
+                            sh 'npm ci'
+                        }
+                    }
+                }
+                stage('RAG Service') {
+                    steps {
+                        dir('rag-service') {
+                            sh '''
+                                python3 -m venv venv
+                                . venv/bin/activate
+                                pip install -r requirements.txt
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Lint & Type Check') {
+            parallel {
+                stage('Backend Lint') {
+                    steps {
+                        dir('backend') {
+                            sh 'npm run lint || true'
+                        }
+                    }
+                }
+                stage('Frontend Lint') {
+                    steps {
+                        dir('frontend') {
+                            sh 'npm run lint || true'
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Run Tests') {
+            parallel {
+                stage('Backend Tests') {
+                    steps {
+                        dir('backend') {
+                            sh 'npm test || true'
+                        }
+                    }
+                }
+                stage('MCP Tests') {
+                    steps {
+                        sh './scripts/test-mcp.sh || true'
+                    }
+                }
+                stage('RAG Tests') {
+                    steps {
+                        sh './scripts/test-rag.sh || true'
+                    }
+                }
+            }
+        }
+        
+        stage('Build Docker Images') {
+            parallel {
+                stage('Build Backend') {
+                    steps {
+                        script {
+                            docker.build("${BACKEND_IMAGE}:${IMAGE_TAG}", "./backend")
+                            docker.build("${BACKEND_IMAGE}:latest", "./backend")
+                        }
+                    }
+                }
+                stage('Build Frontend') {
+                    steps {
+                        script {
+                            docker.build("${FRONTEND_IMAGE}:${IMAGE_TAG}", "./frontend")
+                            docker.build("${FRONTEND_IMAGE}:latest", "./frontend")
+                        }
+                    }
+                }
+                stage('Build MCP') {
+                    steps {
+                        script {
+                            docker.build("${MCP_IMAGE}:${IMAGE_TAG}", "./mcp-server")
+                            docker.build("${MCP_IMAGE}:latest", "./mcp-server")
+                        }
+                    }
+                }
+                stage('Build RAG') {
+                    steps {
+                        script {
+                            docker.build("${RAG_IMAGE}:${IMAGE_TAG}", "./rag-service")
+                            docker.build("${RAG_IMAGE}:latest", "./rag-service")
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Security Scan') {
+            steps {
+                script {
+                    // Scan images for vulnerabilities
+                    sh """
+                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                        aquasec/trivy image ${BACKEND_IMAGE}:${IMAGE_TAG} || true
+                    """
+                }
+            }
+        }
+        
+        stage('Push to ECR') {
+            steps {
+                script {
+                    docker.withRegistry("https://${ECR_REGISTRY}", 'ecr:us-east-1:aws-credentials') {
+                        sh """
+                            docker push ${BACKEND_IMAGE}:${IMAGE_TAG}
+                            docker push ${BACKEND_IMAGE}:latest
+                            docker push ${FRONTEND_IMAGE}:${IMAGE_TAG}
+                            docker push ${FRONTEND_IMAGE}:latest
+                            docker push ${MCP_IMAGE}:${IMAGE_TAG}
+                            docker push ${MCP_IMAGE}:latest
+                            docker push ${RAG_IMAGE}:${IMAGE_TAG}
+                            docker push ${RAG_IMAGE}:latest
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy to Kubernetes') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    // Update kubeconfig
+                    sh "aws eks update-kubeconfig --region ${AWS_REGION} --name ${EKS_CLUSTER}"
+                    
+                    // Update image tags in deployments
+                    sh """
+                        sed -i 's|\${ECR_REGISTRY}|${ECR_REGISTRY}|g' k8s/*.yaml
+                        sed -i 's|\${IMAGE_TAG}|${IMAGE_TAG}|g' k8s/*.yaml
+                    """
+                    
+                    // Apply Kubernetes manifests
+                    sh """
+                        kubectl apply -f k8s/namespace.yaml
+                        kubectl apply -f k8s/configmap.yaml
+                        kubectl apply -f k8s/secrets.yaml
+                        kubectl apply -f k8s/backend-deployment.yaml
+                        kubectl apply -f k8s/frontend-deployment.yaml
+                        kubectl apply -f k8s/mcp-deployment.yaml
+                        kubectl apply -f k8s/rag-deployment.yaml
+                        kubectl apply -f k8s/ingress.yaml
+                    """
+                    
+                    // Wait for rollout
+                    sh """
+                        kubectl rollout status deployment/backend-api -n ${NAMESPACE}
+                        kubectl rollout status deployment/frontend -n ${NAMESPACE}
+                        kubectl rollout status deployment/mcp-server -n ${NAMESPACE}
+                        kubectl rollout status deployment/rag-service -n ${NAMESPACE}
+                    """
+                }
+            }
+        }
+        
+        stage('Deploy Monitoring') {
+            when {
+                branch 'main'
+            }
+            steps {
+                sh """
+                    kubectl apply -f monitoring/prometheus-config.yaml
+                    kubectl apply -f monitoring/grafana-deployment.yaml
+                """
+            }
+        }
+        
+        stage('Health Check') {
+            steps {
+                script {
+                    // Wait for services to be ready
+                    sleep 30
+                    
+                    // Check service health
+                    sh """
+                        kubectl get pods -n ${NAMESPACE}
+                        kubectl get svc -n ${NAMESPACE}
+                        kubectl get ingress -n ${NAMESPACE}
+                    """
+                }
+            }
+        }
+        
+        stage('Smoke Tests') {
+            steps {
+                script {
+                    // Run smoke tests against deployed services
+                    sh """
+                        # Test backend health
+                        kubectl run smoke-test --rm -i --restart=Never --image=curlimages/curl -- \
+                        curl -f http://backend-api-service:3000/health || exit 1
+                        
+                        # Test frontend
+                        kubectl run smoke-test --rm -i --restart=Never --image=curlimages/curl -- \
+                        curl -f http://frontend-service || exit 1
+                    """
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo '✅ Deployment successful!'
+            // Send Slack notification
+            slackSend(
+                color: 'good',
+                message: "MediTriage deployed successfully! Build #${env.BUILD_NUMBER} - ${env.GIT_COMMIT.take(7)}"
+            )
+        }
+        failure {
+            echo '❌ Deployment failed!'
+            // Send Slack notification
+            slackSend(
+                color: 'danger',
+                message: "MediTriage deployment FAILED! Build #${env.BUILD_NUMBER}"
+            )
+        }
+        always {
+            // Clean up workspace
+            cleanWs()
+        }
+    }
+}

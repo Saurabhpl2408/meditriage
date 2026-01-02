@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-service
+  namespace: meditriage-prod
+  labels:
+    app: rag-service
+    tier: ai
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: rag-service
+  template:
+    metadata:
+      labels:
+        app: rag-service
+        tier: ai
+    spec:
+      containers:
+      - name: rag-service
+        image: ${ECR_REGISTRY}/meditriage-rag:${IMAGE_TAG}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: RAG_SERVICE_PORT
+          value: "8000"
+        - name: CHROMA_PERSIST_DIR
+          value: "/data/chromadb"
+        - name: EMBEDDING_MODEL
+          value: "sentence-transformers/all-MiniLM-L6-v2"
+        - name: EMBEDDING_DEVICE
+          value: "cpu"
+        volumeMounts:
+        - name: chromadb-storage
+          mountPath: /data/chromadb
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: chromadb-storage
+        persistentVolumeClaim:
+          claimName: chromadb-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rag-service-service
+  namespace: meditriage-prod
+  labels:
+    app: rag-service
+spec:
+  selector:
+    app: rag-service
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: chromadb-pvc
+  namespace: meditriage-prod
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: gp3
