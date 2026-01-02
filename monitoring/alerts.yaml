@@ -1,0 +1,186 @@
+# Prometheus Alert Rules for MediTriage
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alerts
+  namespace: meditriage-prod
+data:
+  alerts.yml: |
+    groups:
+    - name: meditriage_critical_alerts
+      interval: 30s
+      rules:
+      
+      # Service Down Alerts
+      - alert: BackendServiceDown
+        expr: up{job="backend-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: backend
+        annotations:
+          summary: "Backend API is DOWN"
+          description: "Backend API has been down for more than 1 minute"
+          
+      - alert: MCPServerDown
+        expr: up{job="mcp-server"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: mcp
+        annotations:
+          summary: "MCP Server is DOWN"
+          description: "MCP Server has been down for more than 1 minute"
+          
+      - alert: RAGServiceDown
+        expr: up{job="rag-service"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: rag
+        annotations:
+          summary: "RAG Service is DOWN"
+          description: "RAG Service has been down for more than 2 minutes"
+      
+      # High Error Rate
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} for {{ $labels.service }}"
+      
+      # High Response Time
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time"
+          description: "95th percentile response time is {{ $value }}s on {{ $labels.service }}"
+      
+      # Database Connection Issues
+      - alert: DatabaseConnectionPoolHigh
+        expr: database_connections_active / database_connections_max > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Database connection pool usage high"
+          description: "Connection pool is {{ $value | humanizePercentage }} full"
+          
+      - alert: DatabaseConnectionFailed
+        expr: increase(database_connection_errors_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection errors"
+          description: "{{ $value }} connection errors in last 5 minutes"
+      
+      # Memory Alerts
+      - alert: HighMemoryUsage
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.pod }}"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+      
+      # CPU Alerts
+      - alert: HighCPUUsage
+        expr: (rate(container_cpu_usage_seconds_total[5m]) / container_spec_cpu_quota) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.pod }}"
+          description: "CPU usage is {{ $value | humanizePercentage }}"
+      
+      # Pod Restart Alerts
+      - alert: PodRestarting
+        expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod {{ $labels.pod }} is restarting"
+          description: "Pod has restarted {{ $value }} times in last 15 minutes"
+      
+      # Medical-Specific Alerts
+      - alert: RedFlagDetectionFailure
+        expr: increase(red_flag_detection_errors_total[10m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Red flag detection system error"
+          description: "CRITICAL: Red flag detection failed {{ $value }} times. Manual review required."
+      
+      - alert: HighEmergencyCaseVolume
+        expr: rate(triage_assessments_total{urgency="EMERGENCY"}[5m]) > 0.1
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "High volume of emergency cases"
+          description: "{{ $value }} emergency cases per second. May indicate system issue or real emergency spike."
+      
+      # Disk Space
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Only {{ $value | humanizePercentage }} disk space remaining"
+      
+      # Certificate Expiry
+      - alert: SSLCertificateExpiringSoon
+        expr: (ssl_certificate_expiry_seconds < 604800)  # 7 days
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "Certificate expires in {{ $value | humanizeDuration }}"
+
+    - name: meditriage_performance_alerts
+      interval: 1m
+      rules:
+      
+      # Slow Triage Analysis
+      - alert: SlowTriageAnalysis
+        expr: histogram_quantile(0.95, rate(triage_analysis_duration_seconds_bucket[5m])) > 3
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow triage analysis"
+          description: "95% of triage analyses taking >3 seconds"
+      
+      # RAG Query Performance
+      - alert: SlowRAGQueries
+        expr: histogram_quantile(0.95, rate(rag_query_duration_seconds_bucket[5m])) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow RAG queries"
+          description: "95% of RAG queries taking >1 second"
+      
+      # High Request Rate
+      - alert: UnusuallyHighTraffic
+        expr: rate(http_requests_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: info
+        annotations:
+          summary: "Unusually high traffic"
+          description: "Request rate: {{ $value }} req/s (normal: <50 req/s)"

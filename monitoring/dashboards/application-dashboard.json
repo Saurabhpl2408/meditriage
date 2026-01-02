@@ -1,0 +1,108 @@
+{
+  "dashboard": {
+    "title": "MediTriage - Application Metrics",
+    "tags": ["meditriage", "application"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Triage Assessments per Minute",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(triage_assessments_total[5m]) * 60",
+            "legendFormat": "Assessments/min"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8}
+      },
+      {
+        "id": 2,
+        "title": "Urgency Level Distribution",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "triage_assessments_total",
+            "legendFormat": "{{ urgency }}"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8}
+      },
+      {
+        "id": 3,
+        "title": "API Response Time (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{ service }}"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8}
+      },
+      {
+        "id": 4,
+        "title": "Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{status=~\"5..\"}[5m])",
+            "legendFormat": "{{ service }}"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8}
+      },
+      {
+        "id": 5,
+        "title": "Red Flags Detected",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(increase(red_flags_detected_total[1h]))",
+            "legendFormat": "Last Hour"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 16, "w": 6, "h": 4}
+      },
+      {
+        "id": 6,
+        "title": "Emergency Cases",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(triage_assessments_total{urgency=\"EMERGENCY\"})",
+            "legendFormat": "Total"
+          }
+        ],
+        "gridPos": {"x": 6, "y": 16, "w": 6, "h": 4}
+      },
+      {
+        "id": 7,
+        "title": "Voice Input Usage",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(increase(voice_input_sessions_total[1h]))",
+            "legendFormat": "Last Hour"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 16, "w": 6, "h": 4}
+      },
+      {
+        "id": 8,
+        "title": "RAG Queries",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(increase(rag_queries_total[1h]))",
+            "legendFormat": "Last Hour"
+          }
+        ],
+        "gridPos": {"x": 18, "y": 16, "w": 6, "h": 4}
+      }
+    ],
+    "refresh": "10s",
+    "schemaVersion": 36,
+    "version": 1
+  }
+}

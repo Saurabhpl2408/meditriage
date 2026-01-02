@@ -1,0 +1,185 @@
+{
+  "dashboard": {
+    "title": "MediTriage - Medical Metrics",
+    "tags": ["meditriage", "medical", "business"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Total Assessments (24h)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(increase(triage_assessments_total[24h]))",
+            "legendFormat": "Assessments"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4}
+      },
+      {
+        "id": 2,
+        "title": "Emergency Cases (24h)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(increase(triage_assessments_total{urgency=\"EMERGENCY\"}[24h]))",
+            "legendFormat": "Emergency"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 10, "color": "yellow"},
+                {"value": 20, "color": "red"}
+              ]
+            }
+          }
+        },
+        "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4}
+      },
+      {
+        "id": 3,
+        "title": "Urgency Distribution (Last Hour)",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (urgency) (increase(triage_assessments_total[1h]))",
+            "legendFormat": "{{ urgency }}"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 10}
+      },
+      {
+        "id": 4,
+        "title": "Average Confidence Score",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "avg(triage_confidence_score)",
+            "legendFormat": "Confidence"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 1,
+            "unit": "percentunit"
+          }
+        },
+        "gridPos": {"x": 0, "y": 4, "w": 6, "h": 6}
+      },
+      {
+        "id": 5,
+        "title": "Voice Input vs Text Input",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (input_type) (increase(symptom_input_total[24h]))",
+            "legendFormat": "{{ input_type }}"
+          }
+        ],
+        "gridPos": {"x": 6, "y": 4, "w": 6, "h": 6}
+      },
+      {
+        "id": 6,
+        "title": "Top 10 Symptoms (24h)",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "topk(10, sum by (symptom) (increase(symptom_searches_total[24h])))",
+            "format": "table"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 10, "w": 12, "h": 8}
+      },
+      {
+        "id": 7,
+        "title": "Top 10 Conditions Matched (24h)",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "topk(10, sum by (condition) (increase(condition_matches_total[24h])))",
+            "format": "table"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 10, "w": 12, "h": 8}
+      },
+      {
+        "id": 8,
+        "title": "Red Flag Detections Over Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum by (red_flag) (increase(red_flags_detected_total[1h]))",
+            "legendFormat": "{{ red_flag }}"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 18, "w": 24, "h": 8}
+      },
+      {
+        "id": 9,
+        "title": "RAG Query Response Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(rag_query_duration_seconds_bucket[5m]))",
+            "legendFormat": "p50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(rag_query_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(rag_query_duration_seconds_bucket[5m]))",
+            "legendFormat": "p99"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 26, "w": 12, "h": 8}
+      },
+      {
+        "id": 10,
+        "title": "Condition Match Accuracy",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "avg(condition_match_score)",
+            "legendFormat": "Avg Match Score"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 1,
+            "unit": "percentunit",
+            "thresholds": {
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 0.7, "color": "yellow"},
+                {"value": 0.85, "color": "green"}
+              ]
+            }
+          }
+        },
+        "gridPos": {"x": 12, "y": 26, "w": 6, "h": 8}
+      },
+      {
+        "id": 11,
+        "title": "User Sessions (Active)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "count(up{job=~\"backend-api|frontend\"})",
+            "legendFormat": "Active"
+          }
+        ],
+        "gridPos": {"x": 18, "y": 26, "w": 6, "h": 8}
+      }
+    ],
+    "refresh": "10s",
+    "schemaVersion": 36,
+    "version": 1
+  }
+}

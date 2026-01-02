@@ -1,0 +1,44 @@
+# Grafana Datasources Configuration
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: meditriage-prod
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    
+    datasources:
+    # Prometheus
+    - name: Prometheus
+      type: prometheus
+      access: proxy
+      url: http://prometheus:9090
+      isDefault: true
+      editable: true
+      jsonData:
+        timeInterval: "15s"
+        queryTimeout: "60s"
+        httpMethod: "POST"
+    
+    # CloudWatch (optional - if using AWS CloudWatch)
+    - name: CloudWatch
+      type: cloudwatch
+      access: proxy
+      jsonData:
+        authType: "keys"
+        defaultRegion: "us-east-1"
+      secureJsonData:
+        accessKey: "${AWS_ACCESS_KEY}"
+        secretKey: "${AWS_SECRET_KEY}"
+      editable: true
+    
+    # Loki for logs (optional)
+    - name: Loki
+      type: loki
+      access: proxy
+      url: http://loki:3100
+      editable: true
+
+deletionPolicy: delete

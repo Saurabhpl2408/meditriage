@@ -1,0 +1,56 @@
+# Prometheus ServiceMonitors for automatic metric discovery
+
+---
+# Backend API ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: backend-api-monitor
+  namespace: meditriage-prod
+  labels:
+    app: backend-api
+spec:
+  selector:
+    matchLabels:
+      app: backend-api
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 15s
+    scrapeTimeout: 10s
+
+---
+# MCP Server ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mcp-server-monitor
+  namespace: meditriage-prod
+  labels:
+    app: mcp-server
+spec:
+  selector:
+    matchLabels:
+      app: mcp-server
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 15s
+
+---
+# RAG Service ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: rag-service-monitor
+  namespace: meditriage-prod
+  labels:
+    app: rag-service
+spec:
+  selector:
+    matchLabels:
+      app: rag-service
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 15s

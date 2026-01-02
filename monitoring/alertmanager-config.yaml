@@ -1,0 +1,140 @@
+# Alertmanager Configuration
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: meditriage-prod
+data:
+  alertmanager.yml: |
+    global:
+      resolve_timeout: 5m
+      slack_api_url: 'YOUR_SLACK_WEBHOOK_URL'  # Replace with your webhook
+    
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 12h
+      receiver: 'default'
+      routes:
+      # Critical alerts go to PagerDuty
+      - match:
+          severity: critical
+        receiver: 'pagerduty'
+        continue: true
+      
+      # Critical also go to Slack
+      - match:
+          severity: critical
+        receiver: 'slack-critical'
+      
+      # Warnings go to Slack
+      - match:
+          severity: warning
+        receiver: 'slack-warnings'
+      
+      # Medical alerts go to dedicated channel
+      - match_re:
+          alertname: '.*RedFlag.*|.*Emergency.*'
+        receiver: 'slack-medical'
+    
+    receivers:
+    # Default receiver (email)
+    - name: 'default'
+      email_configs:
+      - to: 'alerts@meditriage.com'
+        from: 'alertmanager@meditriage.com'
+        smarthost: 'smtp.gmail.com:587'
+        auth_username: 'your-email@gmail.com'
+        auth_password: 'your-app-password'
+        headers:
+          Subject: 'MediTriage Alert: {{ .GroupLabels.alertname }}'
+    
+    # Slack - Critical
+    - name: 'slack-critical'
+      slack_configs:
+      - channel: '#meditriage-critical'
+        title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        color: 'danger'
+    
+    # Slack - Warnings
+    - name: 'slack-warnings'
+      slack_configs:
+      - channel: '#meditriage-alerts'
+        title: '⚠️ Warning: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        color: 'warning'
+    
+    # Slack - Medical
+    - name: 'slack-medical'
+      slack_configs:
+      - channel: '#meditriage-medical'
+        title: '🏥 Medical Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        color: 'danger'
+    
+    # PagerDuty (for critical on-call)
+    - name: 'pagerduty'
+      pagerduty_configs:
+      - service_key: 'YOUR_PAGERDUTY_SERVICE_KEY'
+        description: '{{ .GroupLabels.alertname }}: {{ .GroupLabels.instance }}'
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: meditriage-prod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+    spec:
+      containers:
+      - name: alertmanager
+        image: prom/alertmanager:v0.26.0
+        args:
+          - '--config.file=/etc/alertmanager/alertmanager.yml'
+          - '--storage.path=/alertmanager'
+        ports:
+        - containerPort: 9093
+          name: web
+        volumeMounts:
+        - name: config
+          mountPath: /etc/alertmanager
+        - name: storage
+          mountPath: /alertmanager
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: config
+        configMap:
+          name: alertmanager-config
+      - name: storage
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: meditriage-prod
+spec:
+  selector:
+    app: alertmanager
+  ports:
+  - port: 9093
+    targetPort: 9093
+  type: ClusterIP
